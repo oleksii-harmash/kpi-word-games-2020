@@ -2,7 +2,7 @@
 # Name: Alexey Garmash
 # Students group: KM-04
 # Collaborators: -
-# Time spent: 3 h
+# Time spent: 9 h
 from random import choice
 from string import ascii_lowercase
 import time
@@ -126,7 +126,7 @@ class Hangman:
         self.__word_letters_guessed = set()
 
         if not self.__word:
-            self.__word = Hangman.__choose_word()
+            self.__word = self.__choose_word()
 
     @classmethod
     def __get_words(cls) -> list:
@@ -144,7 +144,7 @@ class Hangman:
         Uses method choice() from the module "random";
         :return: word from wordlist at random;
         """
-        return choice(cls.__wordlist)
+        return choice(cls.__get_words())
 
     def get_score(self) -> int:
         """
@@ -209,6 +209,8 @@ class Hangman:
             if self.__warnings >= 0:
                 print(f'Oops! That is not a valid symbol or you already entered that letter.')
                 print(f'You have {self.__warnings} warnings left: ', self.__get_guessed_word(self.__word))
+            else:
+                self.__guesses -= 1
         return is_warning
 
     def __guesses_left(self, letter: str) -> bool:
@@ -227,7 +229,7 @@ class Hangman:
         else:
             self.__guesses -= 2 if letter in VOWELS else 1
             if self.__guesses >= 0:
-                print(f'Oops! That letter is not in my word.\n')
+                print(f'Oops! That letter is not in my word.')
                 print(f'Please guess a letter: {self.__get_guessed_word(self.__word)}')
         return is_guessed
 
@@ -265,7 +267,7 @@ class Hangman:
 
         temp_word = my_word.replace(' ', '')
 
-        for other_word in self.__wordlist:
+        for other_word in self.__get_words():
             if self.__match_with_gaps(temp_word, other_word):
                 show_matches.append(other_word)
         if not show_matches:
@@ -291,9 +293,9 @@ class Hangman:
         """
         self.__is_end_game = True
 
-        while self.__warnings >= 0 and self.__guesses >= 0:
+        while self.__guesses > 0:
             print('-' * 20)
-            print(f'\nYou have {self.__guesses} guesses left.\n')
+            print(f'You have {self.__guesses} guesses left.')
             print(f'Available letters: {self.__get_available_letters()}')
             letter = str(input('Please guess a letter: ')).lower()
 
@@ -322,15 +324,13 @@ class Hangman:
         Function initialize attribute self.word and self.wordlist.
         Show welcome words and start the process of game
         """
-        # initialize attribute
-        Hangman.__get_words()
 
         if self.__is_end_game:
             raise RestartError('Game can be ran only once')
 
         # welcome words
-        print(f'Welcome to the game Hangman!\n')
-        print(f'I am thinking of a word that is {len(self.__word)} letters long.\n')
+        print(f'Welcome to the game Hangman!')
+        print(f'I am thinking of a word that is {len(self.__word)} letters long.')
         print(f'You have {self.__warnings} warnings and {self.__guesses} guesses left')
 
         # for more comfortable work with user - add delay
