@@ -5,7 +5,7 @@
 #
 # Name          : Alexey Garmash
 # Collaborators : -
-# Time spent    : 6 h
+# Time spent    : 7 h
 
 
 from math import ceil
@@ -28,112 +28,13 @@ SCRABBLE_LETTER_VALUES = {
 }
 
 
-class Game:
+class Word:
     """
-    Class  describing the launch of the game and interaction with objects of other classes
+    The class describes the object of the game - a word
 
     Attributes:
         WORDLIST_FILENAME -> str
             Filename with words.
-
-        self.__wordlist -> list
-            List of valid words from file "words.txt".
-            Calls function self.load_words() at initialization
-
-        self.__word
-            Current word in iteration.
-
-
-        self.__hand_obj - object of class
-            Object of class Hand
-
-        self.__total_game_points - int
-            Sum of points for all hands.
-
-    Methods:
-        __play_hand()
-            Launch game for one hand
-
-        play_game()
-            Launch game for "n" numbers of hands.
-
-        @classmethod
-        load_words()
-            Load words from file to list
-    """
-    WORDLIST_FILENAME = "words.txt"
-
-    def __init__(self):
-        self.__wordlist = self.load_words()
-        self.__word = None
-        self.__hand_obj = None
-        self.__hand_copy = None
-        self.__total_game_points = 0
-
-    def play_game(self):
-        """
-        Waits for user to enter the number of hands
-        and starts function call in cycle. Print informational messages for
-        user.
-        """
-        print('Welcome! Prove that you god of words.')
-        try:
-            number_hands = int(input('Enter total numbers of hand: '))
-            if int(number_hands) not in range(MAX_HANDS):
-                return self.play_game()
-        except ValueError:
-            print('You entered invalid value')
-            return self.play_game()
-
-        for _ in range(number_hands):
-            self.__hand_obj = Hand()
-            self.__play_hand()
-
-        print(f'Total score of game: {self.__total_game_points}')
-
-    def __play_hand(self, ):
-        """
-        Makes a play for one hand.
-        It prompts user to replace letter in the current hand, starts play cycle
-        and at the end offers to replay hand.
-        """
-        print('Current Hand:', end=' ')
-        self.__hand_copy = self.__hand_obj.hand.copy()
-        self.__hand_obj.display_hand()
-
-        if input('Would you like to substitute a letter? ') in ('yes', 'Yes'):
-            self.__hand_obj.substitute_hand(input('Which letter would you like to replace: '))
-
-        while sum(self.__hand_obj.hand.values()) > 0:
-            print('Current Hand:', end=' ')
-            self.__hand_obj.display_hand()
-            self.__word = input('Enter word, or “!!” to indicate that you are finished: ').lower().replace(' ', '')
-            # main process
-            self.__hand_obj.input_processing(self.__word, self.__wordlist)
-
-            if self.__word == END_CHAR:
-                print(f'Total score for this hand: {self.__hand_obj.get_hand_score()}', '-' * 15, sep='\n')
-                break
-
-        if input('Would you like to replay the hand? ') in ('yes', 'Yes'):
-            self.__hand_obj.hand = self.__hand_copy
-            return self.__play_hand()
-        else:
-            self.__total_game_points += self.__hand_obj.get_hand_score()
-
-    @classmethod
-    def load_words(cls):
-        """
-        Returns a list of valid words. Words are strings of lowercase letters.
-        Depending on the size of the word list, this function may
-        take a while to finish.
-        """
-        return [line.strip().lower() for line in open(cls.WORDLIST_FILENAME, 'r')]
-
-
-class Word:
-    """
-    The class describes the object of the game - a word
 
     Methods:
         @classmethod
@@ -143,12 +44,15 @@ class Word:
         @classmethod
         get_word_point()
             Calculate score of letter in word by the points in dictionary
-            SCRABBLE_LETTER_VALUES
+            SCRABBLE_LETTER_VALUES.
 
-        @staticmethod
-        word_in_wordlist(word, wordlist)
-            Checks if a word is in wordlist
+        @classmethod
+        get_all_words()
+            Getter with cashing for wordlist.
     """
+    WORDLIST_FILENAME = "words.txt"
+    __wordlist = None
+
     @classmethod
     def get_word_score(cls, word, hand: dict):
         """
@@ -157,10 +61,10 @@ class Word:
         """
         remaining_letters = sum(hand.values())
         expression = 7 * len(word) - 3 * (remaining_letters - len(word))
-        return cls.get_word_point(word) * max(1, expression)
+        return cls.get_word_points(word) * max(1, expression)
 
     @classmethod
-    def get_word_point(cls, word):
+    def get_word_points(cls, word):
         """
         Returns the score of the current word according to points
         in SCRABBLE_LETTER_VALUES
@@ -171,12 +75,16 @@ class Word:
         word_point = reduce(lambda total, point: total + point, point_list)
         return word_point
 
-    @staticmethod
-    def word_in_wordlist(word, wordlist):
+    @classmethod
+    def get_all_words(cls) -> list:
         """
-        Returns a boolean if the word is in the list of valid words
+        Returns a list of valid words. Words are strings of lowercase letters.
+        Depending on the size of the word list, this function may
+        take a while to finish.
         """
-        return word in wordlist
+        if not cls.__wordlist:
+            cls.__wordlist = [line.strip().lower() for line in open(cls.WORDLIST_FILENAME, 'r')]
+        return cls.__wordlist
 
 
 class Hand:
@@ -196,45 +104,30 @@ class Hand:
         get_frequency_dict(word)
         Returns a dictionary where the keys are elements of the sequence and the values are integer counts.
 
-        display_hand()
+        display()
             Displays the current hand as a line of letters.
 
-        deal_hand()
+        deal()
             Create hand with letter from VOWELS and SCRABBLE_LETTER_VALUES, WILDCARD.
 
-        update_hand()
+        update()
             Updates the current hand based on the entered word.
 
-        input_processing()
-            Sends a word for checks to different methods.
-
-        valid_output()
-            Runs if the word passed the correctness check.
-            Calculates the points for the current word and displays an informational message.
-
-        wildcard_output()
-            Runs if the word passed the correctness check with WILDCARD.
-            Calculates the points for the current word and displays an informational message.
-
-        is_valid_input()
-            Function is run after being called from input_processing().
-            Checks for the letters of the word in the hand and refreshes the hand.
-
-        is_valid_wildcard()
-            Function is run after being called from input_processing().
-            Checks the correctness use WILDCARD in word. Returns a boolean value.
-
-        substitute_hand()
+        substitute()
             Replaces one letter in the hand with a user selected one.
 
-        get_hand_score()
-            Getter for self.__total
+        add_score()
+            Adder for self.__total
+
+        set_score()
+            Adder for private attribute self.__total
     """
     def __init__(self):
-        self.hand = self.__deal_hand()
+        self.hand = self.__deal()
         self.__total = 0
+        self.sum_hand_points = sum(self.hand.values())
 
-    def display_hand(self):
+    def display(self):
         """
         Displays the letters currently in the hand.
 
@@ -251,7 +144,7 @@ class Hand:
                 print(letter, end=' ')
         print()
 
-    def __deal_hand(self) -> dict:
+    def __deal(self) -> dict:
         """
         Returns a random hand containing n lowercase letters.
         ceil(n/3) letters in the hand should be VOWELS (note,
@@ -280,59 +173,7 @@ class Hand:
         self.hand = hand
         return hand
 
-    def input_processing(self, word: str, wordlist: list):
-        """
-        The method coordinates checks.
-        First, there is a check for the correctness of the input.
-        Returns a call to function __valid_output(), if the word passed the check.
-
-        Otherwise, there is a check for a word with a wildcard.
-        Returns a function call __wildcard_output, if the word passed the wildcard check.
-
-        Displays an informational message, if the word fails the check.
-        """
-        if self.is_valid_input(word, wordlist):
-            return self.__valid_output(word)
-        elif word.count(WILDCARD) == 1 and self.is_valid_wildcard(word, wordlist):
-            return self.__wildcard_output(word)
-        else:
-            self.__update_hand(word)
-            if sum(self.hand.values()) <= 0:
-                print('Ran out of letters.')
-                print(f'Total score for this hand: {self.__total}', '-' * 15, sep='\n')
-                return None
-            print('This is not a valid word. Please choose another word.')
-
-    def is_valid_input(self, word: str, wordlist: list) -> bool:
-        """
-        Checks the presence of letters from the word in the hand
-        and the presence of the word in the word list.
-        Returns a boolean according to this.
-        """
-        word_dict = self.get_frequency_dict(word)
-        for key in word_dict.keys():
-            if key not in self.hand.keys() or word_dict[key] > self.hand.get(key, 0):
-                return False
-
-        return Word.word_in_wordlist(word, wordlist)
-
-    @staticmethod
-    def is_valid_wildcard(word: str, wordlist: list) -> bool:
-        """
-        Checks for words matching the input, where the WILDCARD is a VOWEL.
-        Returns a boolean according to this.
-        """
-        matches = list()
-        for other_word in wordlist:
-            if len(other_word) == len(word):
-                for char, other in zip(word, other_word):
-                    if (char != other and char != WILDCARD) or (char == WILDCARD and other not in VOWELS):
-                        break
-                else:
-                    matches.append(word)
-        return bool(matches)
-
-    def substitute_hand(self, letter: str):
+    def substitute(self, letter: str):
         """
         Allow the user to replace all copies of one letter in the hand (chosen by user)
         with a new letter chosen from the VOWELS and CONSONANTS at random. The new letter
@@ -355,13 +196,14 @@ class Hand:
         returns: dictionary (string -> int)
         """
         if letter not in set(self.hand):
-            print('This letter not in hand.')
+            return False
         else:
             self.hand[letter] -= 1
             if self.hand[letter] <= 0:
                 del self.hand[letter]
             new = choice(list(set(CONSONANTS).union(set(VOWELS)).difference(set(self.hand))))
             self.hand[new] = 1
+            return True
 
     @staticmethod
     def get_frequency_dict(word: str) -> dict:
@@ -378,7 +220,7 @@ class Hand:
             freq[char] = freq.get(char, 0) + 1
         return freq
 
-    def __update_hand(self, word: str) -> dict:
+    def update(self, word: str) -> dict:
         """
         Does NOT assume that hand contains every letter in word at least as
         many times as the letter appears in word. Letters in word that don't
@@ -399,46 +241,180 @@ class Hand:
         word_dict = self.get_frequency_dict(word)
 
         for key in list(word_dict):
-            try:
+            if key in self.hand.keys():
                 self.hand[key] -= word_dict[key]
                 if self.hand[key] <= 0:
                     del self.hand[key]
-            except KeyError:
-                del word_dict[key]
 
         return self.hand
 
-    def __valid_output(self, word: str):
-        """
-        The function starts if the word passed input check.
-        The function calculates points for current word and displays an informational message,
-        after which it calls a function that updates the hand.
-        """
-        score = Word.get_word_score(word, self.hand)
-        self.__update_hand(word)
-        print(f'"{word}" earned: {score} points')
-        self.__total += score
-        print(f'Total: {score}')
-
-    def __wildcard_output(self, word: str):
-        """
-        The function starts if the word passed input check with WILDCARD.
-        The function calculates points for current word and displays an informational message,
-        after which it calls a function that updates the hand.
-        """
-        score = Word.get_word_score(word, self.hand)
-        self.__update_hand(word)
-        print(f'"{word}" earned: {score}')
-        self.__total += score
-        print(f'Total: {score}')
-
-    def get_hand_score(self) -> int:
+    def get_score(self) -> int:
         """
         Getter for private attribute self.__total.
         """
         return self.__total
 
+    def add_score(self, score):
+        """
+        Adder for private attribute self.__total
+        """
+        self.__total += score
+
+    def set_score(self, score):
+        """
+        Setter for private attribute self.__total
+        """
+        self.__total = score
+
+
+class WordsGame:
+    """
+    Class  describing the launch of the game and interaction with objects of other classes
+
+    Methods:
+        play_game()
+            Launch game for "n" numbers of hands.
+
+        @classmethod
+        load_words()
+            Load words from file to list
+
+        is_valid_input()
+            Function is run after being called from input_processing().
+            Checks for the letters of the word in the hand and refreshes the hand.
+
+        is_valid_wildcard()
+            Function is run after being called from input_processing().
+            Checks the correctness use WILDCARD in word. Returns a boolean value.
+    """
+
+    def __init__(self):
+        self.__total_game_points = 0
+
+    def play_game(self):
+        """
+        Waits for user to enter the number of hands
+        and starts function call in cycle. Print informational messages for
+        user.
+        """
+        print('Welcome! Prove that you god of words.')
+        try:
+            number_hands = input('Enter total numbers of hand: ')
+            if not (number_hands.isdecimal() and int(number_hands) in range(MAX_HANDS)):
+                print('You entered invalid value')
+                return self.play_game()
+        except ValueError:
+            print('You entered invalid value')
+            return self.play_game()
+
+        for _ in range(int(number_hands)):
+            current_hand = Hand()
+            self.__play_hand(current_hand)
+
+        print(f'Total score of game: {self.__total_game_points}')
+
+    def __play_hand(self, current: Hand):
+        """
+        Makes a play for one hand.
+        It prompts user to replace letter in the current hand, starts play cycle
+        and at the end offers to replay hand.
+        param current - current object of hand.
+        """
+        for prompt in range(2):
+            print('Current Hand:', end=' ')
+            hand_copy = current.hand.copy()
+            current.display()
+
+            if input('Would you like to substitute a letter? ').lower() == 'yes':
+                if not current.substitute(input('Which letter would you like to replace: ').lower()):
+                    print('This letter not in hand.')
+
+            while current.sum_hand_points > 0:
+                print('Current Hand:', end=' ')
+                current.display()
+                word = input('Enter word, or “!!” to indicate that you are finished: ').lower().replace(' ', '')
+                # main process
+                self.__input_processing(word, Word.get_all_words(), current)
+                # current.input_processing(word, Word.get_all_words())
+
+                if word == END_CHAR:
+                    print(f'Total score for this hand: {current.get_score()}')
+                    print('-' * 15)
+                    break
+
+            if prompt == 0:
+                if input('Would you like to replay the hand? ').lower() == 'yes':
+                    current.hand = hand_copy
+                    current.set_score(0)
+                    continue
+            self.__total_game_points += current.get_score()
+            break
+
+    def __input_processing(self, word: str, wordlist: list, current: Hand):
+        """
+        The method coordinates checks.
+        First, there is a check for the correctness of the input.
+        Call to function __valid_output(), if the word passed the check.
+
+        Otherwise, there is a check for a word with a wildcard.
+        Call to function __wildcard_output, if the word passed the wildcard check.
+
+        Displays an informational message, if the word fails the check.
+        """
+        if self.is_valid_input(word, current) and word in Word.get_all_words():
+            self.__output(word, current)
+            current.update(word)
+        elif word.count(WILDCARD) == 1 and self.is_valid_wildcard(word, wordlist):
+            self.__output(word, current)
+            current.update(word)
+        else:
+            current.update(word)
+            if current.sum_hand_points <= 0:
+                print('Ran out of letters.')
+                print(f'Total score for this hand: {current.get_score()}', '-' * 15, sep='\n')
+                return None
+            print('This is not a valid word. Please choose another word.')
+
+    @staticmethod
+    def is_valid_input(word: str, current: Hand) -> bool:
+        """
+        Checks the presence of letters from the word in the hand
+        and the presence of the word in the word list.
+        Returns a boolean according to this.
+        """
+        word_dict = current.get_frequency_dict(word)
+        for key in word_dict.keys():
+            if key not in current.hand.keys() or word_dict[key] > current.hand.get(key, 0):
+                return False
+        return True
+
+    @staticmethod
+    def is_valid_wildcard(word: str, wordlist: list) -> bool:
+        """
+        Checks for words matching the input, where the WILDCARD is a VOWEL.
+        Returns a boolean according to this.
+        """
+        matches = list()
+        for other_word in wordlist:
+            if len(other_word) == len(word):
+                for char, other in zip(word, other_word):
+                    if (char != other and char != WILDCARD) or (char == WILDCARD and other not in VOWELS):
+                        break
+                else:
+                    matches.append(word)
+        return bool(matches)
+
+    @staticmethod
+    def __output(word: str, current):
+        """
+        The function calculates points for current word and displays an informational message.
+        """
+        score = Word.get_word_score(word, current.hand)
+        print(f'"{word}" earned: {score} points')
+        current.add_score(score)
+        print(f'Total: {score}')
+
 
 if __name__ == '__main__':
-    game = Game()
+    game = WordsGame()
     game.play_game()
